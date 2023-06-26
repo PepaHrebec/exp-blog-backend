@@ -4,13 +4,24 @@ const indexRouter = require("./routes/index");
 require("dotenv").config();
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
+const session = require("express-session");
+const passport = require("passport");
 
 const mongoDB = process.env.PASSWD;
 mongoose.connect(mongoDB);
 
+app.use(
+  session({ secret: "supersecret", resave: false, saveUninitialized: false })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+const initializePassport = require("./passport_config");
+initializePassport(passport);
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use("/", indexRouter);
 
