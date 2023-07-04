@@ -3,14 +3,22 @@ const { body, validationResult } = require("express-validator");
 const passport = require("passport");
 const bcrypt = require("bcryptjs");
 
-exports.user_get = (req, res, next) => {
-  User.findById(req.params.id).then((usr) => {
-    res.json(usr);
-  });
+exports.user_get = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    res.json(user);
+  } catch (error) {
+    res.json(error);
+  }
 };
 
-exports.users_get = (req, res, next) => {
-  User.find({}).then((result) => res.json({ result, user: req.user }));
+exports.users_get = async (req, res, next) => {
+  try {
+    const users = await User.find({});
+    res.json({ users, user: req.user });
+  } catch (error) {
+    res.json(error);
+  }
 };
 // edited for experimentation
 // {"email":"josefhrebec@mail.com","passwd":"tajneHeslo"}
@@ -24,7 +32,7 @@ exports.user_log_in_post = [
       res.json(errs);
     }
     passport.authenticate("local", {
-      successRedirect: "/users",
+      successRedirect: "/user",
     })(req, res, next);
   },
 ];
@@ -43,24 +51,17 @@ exports.user_post = [
 
     if (userLookup) {
       return res.status(400).json({ message: "User already exists" });
-    } else {
-      bcrypt.hash(passwd, 10, (err, result) => {
-        if (err) {
-          return res.status(400).json({ message: "Error hasing password" });
-        } else {
-          const user = new User({
-            email,
-            passwd: result,
-          });
-
-          user
-            .save()
-            .then(() => {
-              return res.json(user);
-            })
-            .catch((err) => next(err));
-        }
+    }
+    try {
+      const hashedPasswd = await bcrypt.hash(passwd, 10);
+      const user = new User({
+        email,
+        passwd: hashedPasswd,
       });
+      const userRes = await user.save();
+      res.json(userRes);
+    } catch (error) {
+      res.json(error);
     }
   },
 ];
